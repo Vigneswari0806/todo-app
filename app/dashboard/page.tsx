@@ -20,6 +20,8 @@ export default function DashboardPage() {
   const [todos, setTodos] = useState<Todo[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
+  const [editingTodo, setEditingTodo] = useState<Todo | null>(null)
+  const [editForm, setEditForm] = useState({ title: '', description: '', priority: 'medium', dueDate: '', category: '' })
   const [filter, setFilter] = useState('all')
   const [form, setForm] = useState({
     title: '',
@@ -62,6 +64,30 @@ export default function DashboardPage() {
     })
     const updated = await res.json()
     setTodos(todos.map((t) => (t.id === todo.id ? updated : t)))
+  }
+
+  const handleEdit = (todo: Todo) => {
+    setEditingTodo(todo)
+    setEditForm({
+      title: todo.title,
+      description: todo.description || '',
+      priority: todo.priority,
+      dueDate: todo.dueDate ? new Date(todo.dueDate).toISOString().split('T')[0] : '',
+      category: todo.category || '',
+    })
+  }
+
+  const handleUpdate = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!editingTodo) return
+    const res = await fetch(`/api/todos/${editingTodo.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(editForm),
+    })
+    const updated = await res.json()
+    setTodos(todos.map((t) => (t.id === editingTodo.id ? updated : t)))
+    setEditingTodo(null)
   }
 
   const deleteTodo = async (id: string) => {
@@ -184,6 +210,70 @@ export default function DashboardPage() {
           ))}
         </div>
 
+        {editingTodo && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-2xl shadow-lg p-6 w-full max-w-md mx-4">
+              <h3 className="text-lg font-semibold text-gray-700 mb-4">Edit Todo</h3>
+              <form onSubmit={handleUpdate} className="space-y-3">
+                <input
+                  type="text"
+                  placeholder="Title *"
+                  required
+                  className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={editForm.title}
+                  onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
+                />
+                <input
+                  type="text"
+                  placeholder="Description (optional)"
+                  className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={editForm.description}
+                  onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                />
+                <div className="grid grid-cols-3 gap-3">
+                  <select
+                    className="border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    value={editForm.priority}
+                    onChange={(e) => setEditForm({ ...editForm, priority: e.target.value })}
+                  >
+                    <option value="low">Low</option>
+                    <option value="medium">Medium</option>
+                    <option value="high">High</option>
+                  </select>
+                  <input
+                    type="date"
+                    className="border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    value={editForm.dueDate}
+                    onChange={(e) => setEditForm({ ...editForm, dueDate: e.target.value })}
+                  />
+                  <input
+                    type="text"
+                    placeholder="Category"
+                    className="border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    value={editForm.category}
+                    onChange={(e) => setEditForm({ ...editForm, category: e.target.value })}
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    type="submit"
+                    className="flex-1 bg-blue-600 text-white py-2 rounded-lg font-semibold hover:bg-blue-700 transition"
+                  >
+                    Save Changes
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEditingTodo(null)}
+                    className="flex-1 bg-gray-100 text-gray-600 py-2 rounded-lg font-semibold hover:bg-gray-200 transition"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
         <div className="space-y-3">
           {filteredTodos.length === 0 ? (
             <div className="text-center py-12 text-gray-400">
@@ -191,9 +281,9 @@ export default function DashboardPage() {
               <p>No todos yet. Add one above!</p>
             </div>
           ) : (
-            filteredTodos.map((todo, index) => (
-  <div
-    key={`${todo.id}-${index}`}
+            filteredTodos.map((todo) => (
+              <div
+                key={todo.id}
                 className={`bg-white rounded-2xl shadow-sm p-5 flex items-start gap-4 transition ${
                   todo.completed ? 'opacity-60' : ''
                 }`}
@@ -205,9 +295,7 @@ export default function DashboardPage() {
                   className="mt-1 w-5 h-5 cursor-pointer accent-blue-600"
                 />
                 <div className="flex-1">
-                  <p className={`font-semibold text-gray-800 ${todo.completed ? 'line-through' : ''}`}>
-                    {todo.title}
-                  </p>
+                  <p style={{ color: 'black', fontWeight: 'bold' }}>{todo.title}</p>
                   {todo.description && (
                     <p className="text-sm text-gray-500 mt-1">{todo.description}</p>
                   )}
@@ -227,12 +315,20 @@ export default function DashboardPage() {
                     )}
                   </div>
                 </div>
-                <button
-                  onClick={() => deleteTodo(todo.id)}
-                  className="text-red-400 hover:text-red-600 transition text-lg"
-                >
-                  🗑️
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleEdit(todo)}
+                    className="text-blue-400 hover:text-blue-600 transition text-lg"
+                  >
+                    ✏️
+                  </button>
+                  <button
+                    onClick={() => deleteTodo(todo.id)}
+                    className="text-red-400 hover:text-red-600 transition text-lg"
+                  >
+                    🗑️
+                  </button>
+                </div>
               </div>
             ))
           )}

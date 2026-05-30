@@ -14,11 +14,32 @@ export async function PATCH(
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const { id } = await params
-    const data = await req.json()
+    const body = await req.json()
+
+    const data: any = {
+      title: body.title,
+      description: body.description,
+      priority: body.priority,
+      category: body.category,
+      completed: body.completed,
+      dueDate: body.dueDate ? new Date(body.dueDate) : null,
+    }
+
+    // Remove undefined fields
+    Object.keys(data).forEach(key => data[key] === undefined && delete data[key])
 
     const todo = await db.todo.update({
       where: { id, userId: session.user.id },
       data,
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        completed: true,
+        priority: true,
+        dueDate: true,
+        category: true,
+      }
     })
 
     return NextResponse.json(todo)
@@ -27,7 +48,6 @@ export async function PATCH(
     return NextResponse.json({ error: 'Something went wrong' }, { status: 500 })
   }
 }
-
 export async function DELETE(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
