@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useSession, signOut } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 
 type Todo = {
   id: string
@@ -123,7 +124,9 @@ export default function DashboardPage() {
       <nav className={`${dm ? 'bg-gray-800' : 'bg-white'} shadow-sm px-6 py-4 flex justify-between items-center`}>
         <h1 className="text-xl font-bold text-blue-500">📝 Todo App</h1>
         <div className="flex items-center gap-4">
-          <span className={`text-sm ${dm ? 'text-gray-300' : 'text-gray-600'}`}>Hi, {session?.user?.name}!</span>
+          <Link href="/profile" className={`text-sm ${dm ? 'text-gray-300' : 'text-gray-600'} hover:underline`}>
+            👤 {session?.user?.name}
+          </Link>
           <button
             onClick={() => setDarkMode(!darkMode)}
             className={`text-sm px-4 py-2 rounded-lg transition ${dm ? 'bg-gray-700 text-yellow-400' : 'bg-gray-100 text-gray-600'}`}
