@@ -6,8 +6,8 @@ import { SessionProvider } from 'next-auth/react'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'Todo App',
-  description: 'A full stack todo app',
+  title: 'Taskflow - Get Things Done',
+  description: 'The #1 task management app',
 }
 
 export default function RootLayout({
